@@ -4,8 +4,11 @@ GO_TAG:=$(shell /bin/sh -c 'eval `go tool dist env`; echo "$${GOOS}_$${GOARCH}"'
 GIT_TAG:=$(shell git rev-parse --short HEAD)
 GOPATH:=$(shell go env GOPATH)
 SOURCES:=$(shell find . -name '*.go')
-DATE_TAG:=$(shell date '+%Y%m%d%H%M%S')
 AWS:=$(shell which 2>/dev/null aws)
+ifeq ($(DATE_TAG),)
+DATE_TAG:=$(shell date '+%Y%m%d%H%M%S')
+endif
+export DATE_TAG
 
 -include contrib/config.mak
 
@@ -63,7 +66,7 @@ dist:
 ifneq ($(AWS),)
 	@echo "Uploading ..."
 	@aws s3 cp --cache-control 'max-age=31536000' "dist/$(PROJECT_NAME)_$(GIT_TAG).tar.xz" "s3://dist-go/$(PROJECT_NAME)/$(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG).tar.xz"
-	aws s3 cp --cache-control 'max-age=31536000' $(patsubst %,dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME)_$(GIT_TAG)_%.tar.gz,$(DIST_ARCHS)) "s3://dist-go/$(PROJECT_NAME)/$(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG)/"
+#	@for foo in $(patsubst %,dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME)_$(GIT_TAG)_%.tar.gz,$(DIST_ARCHS)); do aws s3 cp --cache-control 'max-age=31536000' "$$foo" "s3://dist-go/$(PROJECT_NAME)/$(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG)/"; done
 	@echo "Configuring dist repository"
 	@echo "$(DIST_ARCHS)" | aws s3 cp --cache-control 'max-age=31536000' --content-type 'text/plain' - "s3://dist-go/$(PROJECT_NAME)/$(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG).arch"
 	@echo "$(DATE_TAG) $(GIT_TAG) $(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG)" | aws s3 cp --cache-control 'max-age=3600' --content-type 'text/plain' - "s3://dist-go/$(PROJECT_NAME)/LATEST"
