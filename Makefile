@@ -58,19 +58,25 @@ doc:
 
 dist:
 	@mkdir -p dist/$(PROJECT_NAME)_$(GIT_TAG)
-	@make -s dist/$(PROJECT_NAME)_$(GIT_TAG).tar.lzma
-
-dist/$(PROJECT_NAME)_$(GIT_TAG).tar.lzma: dist/$(PROJECT_NAME)_$(GIT_TAG) $(patsubst %,dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME).%,$(DIST_ARCHS))
-	@echo "Generating $@"
-	@tar --lzma -cf $@ -C dist/$(PROJECT_NAME)_$(GIT_TAG) .
+	@make -s dist/$(PROJECT_NAME)_$(GIT_TAG).tar.xz
+	@make -s $(patsubst %,dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME)_$(GIT_TAG)_%.tar.gz,$(DIST_ARCHS))
 ifneq ($(AWS),)
-	@echo "Uploading $@ as $(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG).tar.lzma"
-	aws s3 cp --cache-control 'max-age=31536000' "$@" "s3://dist-go/$(PROJECT_NAME)/$(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG).tar.lzma"
+	@echo "Uploading ..."
+	@aws s3 cp --cache-control 'max-age=31536000' "dist/$(PROJECT_NAME)_$(GIT_TAG).tar.xz" "s3://dist-go/$(PROJECT_NAME)/$(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG).tar.xz"
+	aws s3 cp --cache-control 'max-age=31536000' $(patsubst %,dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME)_$(GIT_TAG)_%.tar.gz,$(DIST_ARCHS)) "s3://dist-go/$(PROJECT_NAME)/$(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG)/"
 	@echo "Configuring dist repository"
-	echo "$(DIST_ARCHS)" | aws s3 cp --cache-control 'max-age=31536000' --content-type 'text/plain' - "s3://dist-go/$(PROJECT_NAME)/$(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG).arch"
-	echo "$(DATE_TAG) $(GIT_TAG) $(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG)" | aws s3 cp --cache-control 'max-age=3600' --content-type 'text/plain' - "s3://dist-go/$(PROJECT_NAME)/LATEST"
+	@echo "$(DIST_ARCHS)" | aws s3 cp --cache-control 'max-age=31536000' --content-type 'text/plain' - "s3://dist-go/$(PROJECT_NAME)/$(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG).arch"
+	@echo "$(DATE_TAG) $(GIT_TAG) $(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG)" | aws s3 cp --cache-control 'max-age=3600' --content-type 'text/plain' - "s3://dist-go/$(PROJECT_NAME)/LATEST"
 	@echo "Sending to production complete!"
 endif
+
+dist/$(PROJECT_NAME)_$(GIT_TAG).tar.xz: dist/$(PROJECT_NAME)_$(GIT_TAG) $(patsubst %,dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME).%,$(DIST_ARCHS))
+	@echo "Generating $@"
+	@tar -cJf $@ --owner=root:0 --group=root:0 -C dist/$(PROJECT_NAME)_$(GIT_TAG) $(patsubst %,$(PROJECT_NAME).%,$(DIST_ARCHS))
+
+dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME)_$(GIT_TAG)_%.tar.gz: dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME).%
+	@echo "Generating $@"
+	@tar -czf "$@" --owner=root:0 --group=root:0 --transform='flags=r;s|$(PROJECT_NAME).$*|$(PROJECT_NAME)|' -C dist/$(PROJECT_NAME)_$(GIT_TAG) $(PROJECT_NAME).$*
 
 dist/$(PROJECT_NAME)_$(GIT_TAG):
 	@mkdir "$@"
