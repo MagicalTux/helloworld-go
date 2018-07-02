@@ -103,7 +103,11 @@ func main() {
 	startTime = time.Now()
 	goupd.AutoUpdate(false)
 
-	if _, err := os.Stat("internal_key.pem"); err == nil {
+	if _, err := os.Stat("public_key.pem"); err == nil {
+		go func() {
+			log.Fatal(http.ListenAndServeTLS(":8443", "public_key.pem", "public_key.key", HttpHandler{}))
+		}()
+	} else if _, err := os.Stat("internal_key.pem"); err == nil {
 		go func() {
 			log.Fatal(http.ListenAndServeTLS(":8443", "internal_key.pem", "internal_key.key", HttpHandler{}))
 		}()
