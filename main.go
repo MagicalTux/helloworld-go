@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/magicaltux/goupd"
@@ -85,6 +88,11 @@ func dumpInfo(req *HttpRequest) {
 func (HttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path == "/_info" {
 		dumpInfo(&HttpRequest{w, req})
+		return
+	}
+	if strings.HasPrefix(req.URL.Path, "/.well-known/") {
+		// redirect call for SSL certificate issuance
+		httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "https", Host: "ws.atonline.com"}).ServeHTTP(w, req)
 		return
 	}
 	w.Header().Set("Content-Type", "text/plain")
