@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"runtime"
 	"time"
 
@@ -94,10 +95,9 @@ func main() {
 	startTime = time.Now()
 	goupd.AutoUpdate(false)
 
-	s := &http.Server{
-		Addr:    ":8080",
-		Handler: HttpHandler{},
+	if _, err := os.Stat("internal_key.pem"); err == nil {
+		go log.Fatal(http.ListenAndServeTLS(":8443", "internal_key.pem", "internal_key.key", HttpHandler{}))
 	}
 
-	log.Fatal(s.ListenAndServe())
+	log.Fatal(http.ListenAndServe(":8080", HttpHandler{}))
 }
