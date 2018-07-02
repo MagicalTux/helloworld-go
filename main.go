@@ -28,7 +28,7 @@ func (req *HttpRequest) Printf(format string, a ...interface{}) (int, error) {
 }
 
 func dumpInfo(req *HttpRequest) {
-	req.Printf("Informations on platform:\n\n")
+	req.Printf("Informations on helloworld-go:\n\n")
 	req.Printf("Running version:  %s (build %s %s)\n", goupd.GIT_TAG, goupd.DATE_TAG, goupd.MODE)
 	req.Printf("Go version:       %s\n", runtime.Version())
 	req.Printf("Uptime:           %s\n", time.Since(startTime))
