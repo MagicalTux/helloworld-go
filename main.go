@@ -92,7 +92,7 @@ func (HttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	if strings.HasPrefix(req.URL.Path, "/.well-known/") {
 		// redirect call for SSL certificate issuance
-		httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "https", Host: "ws.atonline.com"}).ServeHTTP(w, req)
+		httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: "ws.atonline.com"}).ServeHTTP(w, req)
 		return
 	}
 	w.Header().Set("Content-Type", "text/plain")
