@@ -96,7 +96,9 @@ func main() {
 	goupd.AutoUpdate(false)
 
 	if _, err := os.Stat("internal_key.pem"); err == nil {
-		go log.Fatal(http.ListenAndServeTLS(":8443", "internal_key.pem", "internal_key.key", HttpHandler{}))
+		go func() {
+			log.Fatal(http.ListenAndServeTLS(":8443", "internal_key.pem", "internal_key.key", HttpHandler{}))
+		}()
 	}
 
 	log.Fatal(http.ListenAndServe(":8080", HttpHandler{}))
