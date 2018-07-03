@@ -112,6 +112,7 @@ func main() {
 			log.Printf("failed to read certificate: %s")
 		} else {
 			cfg = new(tls.Config)
+			cfg.NextProtos = []string{"h2", "http/1.1"}
 			cfg.Certificates = []tls.Certificate{cert}
 		}
 	} else if _, err := os.Stat("internal_key.pem"); err == nil {
@@ -120,6 +121,7 @@ func main() {
 			log.Printf("failed to read certificate: %s")
 		} else {
 			cfg = new(tls.Config)
+			cfg.NextProtos = []string{"h2", "http/1.1"}
 			cfg.Certificates = []tls.Certificate{cert}
 		}
 	}
