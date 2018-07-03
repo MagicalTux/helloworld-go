@@ -92,6 +92,12 @@ func (HttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		dumpInfo(&HttpRequest{w, req})
 		return
 	}
+	if req.URL.Path == "/_update" {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("Running update...\n"))
+		go goupd.RunAutoUpdateCheck()
+		return
+	}
 	if strings.HasPrefix(req.URL.Path, "/.well-known/") {
 		// redirect call for SSL certificate issuance
 		httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: "ws.atonline.com"}).ServeHTTP(w, req)
