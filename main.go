@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/magicaltux/goupd"
+	"github.com/magicaltux/magictls"
 )
 
 var startTime time.Time
@@ -102,16 +104,30 @@ func (HttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func main() {
 	startTime = time.Now()
 	goupd.AutoUpdate(false)
+	var cfg *tls.Config
 
 	if _, err := os.Stat("public_key.pem"); err == nil {
-		go func() {
-			log.Fatal(http.ListenAndServeTLS(":8443", "public_key.pem", "public_key.key", HttpHandler{}))
-		}()
+		cert, err := tls.LoadX509KeyPair("public_key.pem", "public_key.key")
+		if err != nil {
+			log.Printf("failed to read certificate: %s")
+		} else {
+			cfg = new(tls.Config)
+			cfg.Certificates = []tls.Certificate{cert}
+		}
 	} else if _, err := os.Stat("internal_key.pem"); err == nil {
-		go func() {
-			log.Fatal(http.ListenAndServeTLS(":8443", "internal_key.pem", "internal_key.key", HttpHandler{}))
-		}()
+		cert, err := tls.LoadX509KeyPair("internal_key.pem", "internal_key.key")
+		if err != nil {
+			log.Printf("failed to read certificate: %s")
+		} else {
+			cfg = new(tls.Config)
+			cfg.Certificates = []tls.Certificate{cert}
+		}
 	}
 
-	log.Fatal(http.ListenAndServe(":8080", HttpHandler{}))
+	l, err := magictls.Listen("tcp", ":8080", cfg)
+	if err != nil {
+		log.Printf("failed to listen on port: %s", err)
+		return
+	}
+	log.Fatal(http.Serve(l, HttpHandler{}))
 }
