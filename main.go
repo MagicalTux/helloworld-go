@@ -37,6 +37,7 @@ func dumpInfo(req *HttpRequest) {
 	req.Printf("Connected client: %s\n", req.R.RemoteAddr)
 	if req.R.TLS != nil {
 		req.Printf("SSL protocol:     %s\n", req.R.TLS.NegotiatedProtocol)
+		req.Printf("SSL Cipher Suite: 0x%04x\n", req.R.TLS.CipherSuite)
 	}
 	req.Printf("\n")
 
@@ -104,7 +105,7 @@ func (HttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("Hello world v2\n"))
+	w.Write([]byte("Hello world v3\n"))
 }
 
 func main() {
