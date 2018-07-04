@@ -93,10 +93,9 @@ func (HttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		dumpInfo(&HttpRequest{w, req})
 		return
 	}
-	if req.URL.Path == "/_update" {
+	if req.URL.Path == "/_health" {
 		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("Running update...\n"))
-		go goupd.RunAutoUpdateCheck()
+		w.Write([]byte("accepting"))
 		return
 	}
 	if strings.HasPrefix(req.URL.Path, "/.well-known/") {
