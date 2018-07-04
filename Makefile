@@ -60,13 +60,13 @@ doc:
 	$(GOPATH)/bin/godoc -v -http=:6060 -index -play
 
 dist:
-	@mkdir -p dist/$(PROJECT_NAME)_$(GIT_TAG)
+	@mkdir -p dist/$(PROJECT_NAME)_$(GIT_TAG)/upload
 	@make -s dist/$(PROJECT_NAME)_$(GIT_TAG).tar.xz
-	@make -s $(patsubst %,dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME)_$(GIT_TAG)_%.tar.gz,$(DIST_ARCHS))
+	@make -s $(patsubst %,dist/$(PROJECT_NAME)_$(GIT_TAG)/upload/$(PROJECT_NAME)_%.bz2,$(DIST_ARCHS))
 ifneq ($(AWS),)
 	@echo "Uploading ..."
 	@aws s3 cp --cache-control 'max-age=31536000' "dist/$(PROJECT_NAME)_$(GIT_TAG).tar.xz" "s3://dist-go/$(PROJECT_NAME)/$(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG).tar.xz"
-#	@for foo in $(patsubst %,dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME)_$(GIT_TAG)_%.tar.gz,$(DIST_ARCHS)); do aws s3 cp --cache-control 'max-age=31536000' "$$foo" "s3://dist-go/$(PROJECT_NAME)/$(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG)/"; done
+	@aws s3 cp --cache-control 'max-age=31536000' --recursive "dist/$(PROJECT_NAME)_$(GIT_TAG)/upload" "s3://dist-go/$(PROJECT_NAME)/$(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG)/"
 	@echo "Configuring dist repository"
 	@echo "$(DIST_ARCHS)" | aws s3 cp --cache-control 'max-age=31536000' --content-type 'text/plain' - "s3://dist-go/$(PROJECT_NAME)/$(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG).arch"
 	@echo "$(DATE_TAG) $(GIT_TAG) $(PROJECT_NAME)_$(DATE_TAG)_$(GIT_TAG)" | aws s3 cp --cache-control 'max-age=60' --content-type 'text/plain' - "s3://dist-go/$(PROJECT_NAME)/LATEST"
@@ -77,9 +77,9 @@ dist/$(PROJECT_NAME)_$(GIT_TAG).tar.xz: dist/$(PROJECT_NAME)_$(GIT_TAG) $(patsub
 	@echo "Generating $@"
 	@tar -cJf $@ --owner=root:0 --group=root:0 -C dist/$(PROJECT_NAME)_$(GIT_TAG) $(patsubst %,$(PROJECT_NAME).%,$(DIST_ARCHS))
 
-dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME)_$(GIT_TAG)_%.tar.gz: dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME).%
+dist/$(PROJECT_NAME)_$(GIT_TAG)/upload/$(PROJECT_NAME)_%.bz2: dist/$(PROJECT_NAME)_$(GIT_TAG)/$(PROJECT_NAME).%
 	@echo "Generating $@"
-	@tar -czf "$@" --owner=root:0 --group=root:0 --transform='flags=r;s|$(PROJECT_NAME).$*|$(PROJECT_NAME)|' -C dist/$(PROJECT_NAME)_$(GIT_TAG) $(PROJECT_NAME).$*
+	@bzip2 --stdout --compress --keep -9 "$<" >"$@"
 
 dist/$(PROJECT_NAME)_$(GIT_TAG):
 	@mkdir "$@"
