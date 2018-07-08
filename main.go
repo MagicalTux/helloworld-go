@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/magicaltux/goupd"
@@ -17,8 +16,6 @@ import (
 )
 
 var startTime time.Time
-
-type HttpHandler struct{}
 
 type HttpRequest struct {
 	W http.ResponseWriter
@@ -29,7 +26,9 @@ func (req *HttpRequest) Printf(format string, a ...interface{}) (int, error) {
 	return fmt.Fprintf(req.W, format, a...)
 }
 
-func dumpInfo(req *HttpRequest) {
+func dumpInfo(w http.ResponseWriter, r *http.Request) {
+	req := HttpRequest{w, r}
+
 	req.Printf("Informations on helloworld-go:\n\n")
 	req.Printf("Running version:  %s (build %s %s)\n", goupd.GIT_TAG, goupd.DATE_TAG, goupd.MODE)
 	req.Printf("Go version:       %s\n", runtime.Version())
@@ -88,30 +87,23 @@ func dumpInfo(req *HttpRequest) {
 	req.Printf("DebugGC       = %t\n", m.DebugGC)
 }
 
-func (HttpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if req.URL.Path == "/_info" {
-		dumpInfo(&HttpRequest{w, req})
-		return
-	}
-	if req.URL.Path == "/_update" {
-		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("Running update...\n"))
-		go goupd.RunAutoUpdateCheck()
-		return
-	}
-	if strings.HasPrefix(req.URL.Path, "/.well-known/") {
-		// redirect call for SSL certificate issuance
-		httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: "ws.atonline.com"}).ServeHTTP(w, req)
-		return
-	}
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("Hello world v3\n"))
-}
-
 func main() {
 	startTime = time.Now()
 	goupd.AutoUpdate(false)
 	var cfg *tls.Config
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/_info", dumpInfo)
+	mux.HandleFunc("/_update", func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("Running update...\n"))
+		go goupd.RunAutoUpdateCheck()
+	})
+	mux.Handle("/.well-known/", httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: "ws.atonline.com"}))
+	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("Hello world v3\n"))
+	})
 
 	if _, err := os.Stat("public_key.pem"); err == nil {
 		cert, err := tls.LoadX509KeyPair("public_key.pem", "public_key.key")
@@ -138,5 +130,6 @@ func main() {
 		log.Printf("failed to listen on port: %s", err)
 		return
 	}
-	log.Fatal(http.Serve(l, HttpHandler{}))
+	log.Printf("[helloworld] Listening on %s", l)
+	log.Fatal(http.Serve(l, mux))
 }
