@@ -100,6 +100,10 @@ func main() {
 	})
 	mux.Handle("/.well-known/", httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: "ws.atonline.com"}))
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path != "/" {
+			http.NotFound(w, req)
+			return
+		}
 		w.Header().Set("Content-Type", "text/plain")
 		w.Write([]byte("Hello world v3\n"))
 	})
