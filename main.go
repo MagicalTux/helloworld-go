@@ -94,10 +94,9 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/_info", dumpInfo)
-	mux.HandleFunc("/_update", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/_health", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("Running update...\n"))
-		go goupd.RunAutoUpdateCheck()
+		w.Write([]byte("accepting"))
 	})
 	mux.Handle("/.well-known/", httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "http", Host: "ws.atonline.com"}))
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
