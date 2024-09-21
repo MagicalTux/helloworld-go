@@ -11,8 +11,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/magicaltux/goupd"
-	"github.com/magicaltux/magictls"
+	"github.com/KarpelesLab/goupd"
+	"github.com/KarpelesLab/magictls"
 )
 
 var startTime time.Time
